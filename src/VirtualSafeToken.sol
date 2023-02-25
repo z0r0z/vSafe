@@ -9,7 +9,7 @@ import {ERC20} from "solmate/tokens/ERC20.sol";
 /// @custom:coauthor ellie.lens
 /// @notice Makes Safe Token (SAFE) opt-in transferable through tx guard.
 /// Users can mint vSAFE equal to their SAFE while it is paused.
-/// @dev Includes improvements such as ERC2612 and gas golfing.
+/// SAFE can be reclaimed from vSAFE pool by burning vSAFE.
 contract VirtualSafeToken is BaseGuard, ERC20("Virtual Safe Token", "vSAFE", 18) {
     /// @dev Canonical deployment of SAFE on Ethereum.
     address internal constant safeToken = 0x5aFE3855358E112B5647B952709E6165e1c1eEEe;
@@ -41,7 +41,7 @@ contract VirtualSafeToken is BaseGuard, ERC20("Virtual Safe Token", "vSAFE", 18)
         require(paused(), "Unpaused.");
 
         // Ensure that SAFE custody is given to vSAFE to fund reclaiming.
-        require(VirtualSafeToken(safeToken).allowance(msg.sender, address(this)) == type(uint256).max, "Unapproved");
+        require(VirtualSafeToken(safeToken).allowance(msg.sender, address(this)) == type(uint256).max, "Unapproved.");
 
         // Ensure no double mint and mint vSAFE per SAFE balance.
         if (minted[msg.sender] = true == !minted[msg.sender]) {
@@ -61,8 +61,7 @@ contract VirtualSafeToken is BaseGuard, ERC20("Virtual Safe Token", "vSAFE", 18)
         _burn(msg.sender, amount);
     }
 
-    /// @dev Called by the Safe contract before a transaction is executed.
-    /// Reverts if the transaction is to a Safe during Safe Token lock.
+    /// @dev Called by a Safe contract before a transaction is executed.
     /// @param to Destination address of the Safe transaction.
     function checkTransaction(
         address to,
@@ -84,8 +83,8 @@ contract VirtualSafeToken is BaseGuard, ERC20("Virtual Safe Token", "vSAFE", 18)
         if (to == address(this)) {
             guardCheck = 2;
         } else {
+            // Ensure no callbacks or calls to SAFE.
             require(to != msg.sender, "Restricted.");
-
             require(to != safeToken, "Restricted.");
         }
     }
