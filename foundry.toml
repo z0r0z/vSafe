@@ -6,3 +6,6 @@
 solc_version = "0.8.19"
 auto_detect_solc = false
 optimizer_runs = 9_999_999
+
+[rpc_endpoints]
+mainnet = "https://rpc.ankr.com/eth"
