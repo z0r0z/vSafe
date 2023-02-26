@@ -7,7 +7,7 @@ import {ERC20} from "solmate/tokens/ERC20.sol";
 /// @title Virtual Safe Token.
 /// @author z0r0z.eth
 /// @custom:coauthor ellie.lens
-/// @notice Makes Safe Token (SAFE) opt-in transferable through tx guard.
+/// @notice Makes Safe Token (SAFE) opt-in transferable via tx guard.
 /// Users can mint vSAFE equal to their SAFE while it is paused.
 /// SAFE can be reclaimed from vSAFE pool by burning vSAFE.
 contract VirtualSafeToken is BaseGuard, ERC20("Virtual Safe Token", "vSAFE", 18) {
@@ -17,8 +17,8 @@ contract VirtualSafeToken is BaseGuard, ERC20("Virtual Safe Token", "vSAFE", 18)
     /// @dev Internal flag to ensure this guard is enabled.
     uint256 internal guardCheck = 1;
 
-    /// @dev Tracks mint claims by Safes.
-    mapping( /*safe*/ address => /*mint*/ bool) public minted;
+    /// @dev Tracks active mint claims by Safes.
+    mapping( /*safe*/ address => /*minted*/ bool) public active;
 
     /// @dev We can cut 10 opcodes in the creation-time
     /// EVM bytecode by declaring constructor payable.
@@ -32,20 +32,22 @@ contract VirtualSafeToken is BaseGuard, ERC20("Virtual Safe Token", "vSAFE", 18)
     /// @dev Mints unclaimed vSAFE to SAFE holders.
     function mint(address to) public payable {
         // Ensure this call is by guarded Safe.
-        require(guardCheck == 2, "Unguarded.");
+        require(guardCheck == 2, "UNGUARDED");
 
         // Reset guard value.
         guardCheck = 1;
 
         // Ensure no mint during transferable period.
-        require(paused(), "Unpaused.");
+        require(paused(), "UNPAUSED");
 
         // Ensure that SAFE custody is given to vSAFE to fund reclaiming.
-        require(VirtualSafeToken(safeToken).allowance(msg.sender, address(this)) == type(uint256).max, "Unapproved.");
+        require(ERC20(safeToken).allowance(msg.sender, address(this)) == type(uint256).max, "UNAPPROVED");
 
         // Ensure no double mint and mint vSAFE per SAFE balance.
-        if (minted[msg.sender] = true == !minted[msg.sender]) {
+        if (active[msg.sender] = true == !active[msg.sender]) {
             _mint(to, ERC20(safeToken).balanceOf(msg.sender));
+        } else {
+            revert("ACTIVE");
         }
     }
 
@@ -54,11 +56,18 @@ contract VirtualSafeToken is BaseGuard, ERC20("Virtual Safe Token", "vSAFE", 18)
         _burn(msg.sender, amount);
     }
 
-    /// @dev Burn an amount of vSAFE to reclaim SAFE.
-    function reclaim(address from, uint256 amount) public payable {
-        VirtualSafeToken(safeToken).transferFrom(from, msg.sender, amount);
+    /// @dev Burn an amount of vSAFE to redeem SAFE.
+    function redeem(address from, uint256 amount) public payable {
+        ERC20(safeToken).transferFrom(from, msg.sender, amount);
 
         _burn(msg.sender, amount);
+    }
+
+    /// @dev Burn vSAFE to exit Safe guard conditions.
+    function renounce() public payable {
+        _burn(msg.sender, ERC20(safeToken).balanceOf(msg.sender));
+
+        delete active[msg.sender];
     }
 
     /// @dev Called by a Safe contract before a transaction is executed.
@@ -83,9 +92,11 @@ contract VirtualSafeToken is BaseGuard, ERC20("Virtual Safe Token", "vSAFE", 18)
         if (to == address(this)) {
             guardCheck = 2;
         } else {
-            // Ensure no callbacks or calls to SAFE.
-            require(to != msg.sender, "Restricted.");
-            require(to != safeToken, "Restricted.");
+            if (active[msg.sender]) {
+                // Ensure no callbacks or calls to SAFE.
+                require(to != msg.sender, "RESTRICTED");
+                require(to != safeToken, "RESTRICTED");
+            }
         }
     }
 
