@@ -2,54 +2,29 @@
 
 # Virtual Safe Token • [![tests](https://github.com/refcell/femplate/actions/workflows/ci.yml/badge.svg?label=tests)](https://github.com/refcell/femplate/actions/workflows/ci.yml) ![license](https://img.shields.io/github/license/refcell/femplate?label=license) ![solidity](https://img.shields.io/badge/solidity-^0.8.19-lightgrey)
 
-A **Clean**, **Robust** Template for Foundry Projects.
+# vSAFE
 
-### Usage
+Converts non-transferable SAFE Tokens held in a Safe multisig wallet into a transferable version (vSAFE).
 
-**Building & Testing**
+## Background
 
-Build the foundry project with `forge build`. Then you can run tests with `forge test`.
+Currently Safe Tokens are non-transferable but claimable by eligible Safes.
 
-**Deployment & Verification**
+While there have been two snapshot proposals ([1](https://snapshot.org/#/safegov.eth/proposal/0xe72815c4eef26024868ee77af637c96ad0b844df4957b969d8ca04fca67094f7), [2](https://snapshot.org/#/safe.eth/proposal/0x1b48a83c44e323275a605b244a05bde89918fb9ec86be7bb83792eb26e544441)) directed to Safe Token holders to turn on transferability (the "DAO"), the DAO did not end up recommending unpausing the tokens to the current owner of the Safe Token contract, the Safe Foundation.
 
-Inside the [`utils/`](./utils/) directory are a few preconfigured scripts that can be used to deploy and verify contracts.
+Transferability still seems like a useful direction to explore, if only to provide additional data to the DAO regarding the market price of participating in the DAO, as well as explore early integrations of SAFE into other protocols.
 
-Scripts take inputs from the cli, using silent mode to hide any sensitive information.
+This initial phase of transferability is supported by the technical implementation of vSAFE by using a secondary ERC20 token that can be minted by current SAFE holders that add vSAFE as a transaction guard.
 
-_NOTE: These scripts are required to be _executable_ meaning they must be made executable by running `chmod +x ./utils/*`._
+The transaction guard prevents moving SAFE tokens without redeeming vSAFE tokens, therefore establishing their 1:1 representation and backing as a virtual unit of account.
 
-_NOTE: these scripts will prompt you for the contract name and deployed addresses (when verifying). Also, they use the `-i` flag on `forge` to ask for your private key for deployment. This uses silent mode which keeps your private key from being printed to the console (and visible in logs)._
+## User Story
 
+Alice has some SAFE locked in her Safe wallet. Alice thinks SAFE is super cool but wants to join BOB DAO and needs ETH.
 
-### I'm new, how do I get started?
+Alice converts the SAFE into vSAFE and sells tokens to Charlie. Alice now has more ETH and can join BOB DAO.
 
-We created a guide to get you started with: [GETTING_STARTED.md](./GETTING_STARTED.md).
-
-
-### Blueprint
-
-```txt
-lib
-├─ forge-std — https://github.com/foundry-rs/forge-std
-├─ solmate — https://github.com/transmissions11/solmate
-scripts
-├─ Deploy.s.sol — Example Contract Deployment Script
-src
-├─ Greeter — Example Contract
-test
-└─ Greeter.t — Example Contract Tests
-```
-
-
-### Notable Mentions
-
-- [femplate](https://github.com/refcell/femplate)
-- [foundry](https://github.com/foundry-rs/foundry)
-- [solmate](https://github.com/Rari-Capital/solmate)
-- [forge-std](https://github.com/brockelmore/forge-std)
-- [forge-template](https://github.com/foundry-rs/forge-template)
-- [foundry-toolchain](https://github.com/foundry-rs/foundry-toolchain)
-
+Later when (or if?) SAFE unlocks, Charlie can convert vSAFE to SAFE. Nice.
 
 ### Disclaimer
 

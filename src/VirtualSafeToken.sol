@@ -65,12 +65,12 @@ contract VirtualSafeToken is BaseGuard, ERC20("Virtual Safe Token", "vSAFE", 18)
 
     /// @dev Burn vSAFE to exit Safe guard conditions.
     function renounce() public payable {
-        _burn(msg.sender, ERC20(safeToken).balanceOf(msg.sender));
-
         delete active[msg.sender];
+
+        _burn(msg.sender, ERC20(safeToken).balanceOf(msg.sender));
     }
 
-    /// @dev Called by a Safe contract before a transaction is executed.
+    /// @dev Called by a Safe before a transaction is executed.
     /// @param to Destination address of the Safe transaction.
     function checkTransaction(
         address to,
