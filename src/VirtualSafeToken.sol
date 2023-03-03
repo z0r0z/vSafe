@@ -17,6 +17,9 @@ contract VirtualSafeToken is BaseGuard, ERC20("Virtual Safe Token", "vSAFE", 18)
     /// @dev Canonical deployment of SAFE on Ethereum.
     address internal constant safeToken = 0x5aFE3855358E112B5647B952709E6165e1c1eEEe;
 
+    /// @dev Owner of the contract.
+    address public immutable OWNER;
+
     /// @dev Internal flag to ensure this guard is enabled.
     uint256 internal guardCheck = 1;
 
@@ -31,7 +34,9 @@ contract VirtualSafeToken is BaseGuard, ERC20("Virtual Safe Token", "vSAFE", 18)
 
     /// @dev We can cut 10 opcodes in the creation-time
     /// EVM bytecode by declaring constructor payable.
-    constructor() payable {}
+    constructor() payable {
+        OWNER = msg.sender;
+    }
 
     /// @dev Fetches whether SAFE is paused.
     function paused() public view returns (bool) {
@@ -124,6 +129,14 @@ contract VirtualSafeToken is BaseGuard, ERC20("Virtual Safe Token", "vSAFE", 18)
         }
     }
 
+    function setTrustedProxy(bytes32 _proxyHash, bool _trusted) external onlyOwner {
+        trustedProxies[_proxyHash] = _trusted;
+    }
+
+    function setTrustedMasterCopy(address _masterCopy, bool _trusted) external onlyOwner {
+        trustedMasterCopies[_masterCopy] = _trusted;
+    }
+
     /// @dev Placeholder for after-execution check in Safe guard.
     function checkAfterExecution(bytes32, bool) external view override {}
 
@@ -135,5 +148,10 @@ contract VirtualSafeToken is BaseGuard, ERC20("Virtual Safe Token", "vSAFE", 18)
             1
         );
         return modules.length;
+    }
+
+    modifier onlyOwner {
+        require(msg.sender == OWNER, "UNAUTHORIZED");
+        _;
     }
 }
