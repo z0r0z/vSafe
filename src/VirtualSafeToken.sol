@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {Enum, BaseGuard} from "lib/safe-contracts/contracts/base/GuardManager.sol";
+import {Enum, BaseGuard, GuardManager} from "lib/safe-contracts/contracts/base/GuardManager.sol";
 import {ERC20} from "solmate/tokens/ERC20.sol";
 
 /// @title Virtual Safe Token.
@@ -71,18 +71,19 @@ contract VirtualSafeToken is BaseGuard, ERC20("Virtual Safe Token", "vSAFE", 18)
     }
 
     /// @dev Called by a Safe before a transaction is executed.
-    /// @param to Destination address of the Safe transaction.
+    /// @param to   Destination address of the Safe transaction.
+    /// @param data Transaciton calldata of the Safe transaction.
     function checkTransaction(
         address to,
         uint256,
-        bytes memory,
+        bytes calldata data,
         Enum.Operation,
         uint256,
         uint256,
         uint256,
         address,
         address payable,
-        bytes memory,
+        bytes calldata,
         address
     )
         external
@@ -93,8 +94,16 @@ contract VirtualSafeToken is BaseGuard, ERC20("Virtual Safe Token", "vSAFE", 18)
             guardCheck = 2;
         } else {
             if (active[msg.sender]) {
-                // Ensure no callbacks or calls to SAFE.
-                require(to != msg.sender, "RESTRICTED");
+                // Ensure guard cannot be removed while active
+                if (
+                    to == msg.sender &&
+                    data.length >= 4 &&
+                    bytes4(data[:4]) == GuardManager.setGuard.selector
+                ) {
+                    revert("RESTRICTED");
+                }
+
+                // Ensure no calls to safe token
                 require(to != safeToken, "RESTRICTED");
             }
         }
