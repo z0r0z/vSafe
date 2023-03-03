@@ -2,9 +2,10 @@
 pragma solidity ^0.8.19;
 
 import {Enum, BaseGuard, GuardManager} from "lib/safe-contracts/contracts/base/GuardManager.sol";
-import {IProxy} from "lib/safe-contracts/contracts/proxies/SafeProxy.sol";
 import {ModuleManager} from "lib/safe-contracts/contracts/base/ModuleManager.sol";
+import {IProxy} from "lib/safe-contracts/contracts/proxies/SafeProxy.sol";
 import {ERC20} from "solmate/tokens/ERC20.sol";
+import {Owned} from "solmate/auth/Owned.sol";
 
 /// @title Virtual Safe Token.
 /// @author z0r0z.eth
@@ -13,12 +14,9 @@ import {ERC20} from "solmate/tokens/ERC20.sol";
 /// @notice Makes Safe Token (SAFE) opt-in transferable via tx guard.
 /// Users can mint vSAFE equal to their SAFE while it is paused.
 /// SAFE can be reclaimed from vSAFE pool by burning vSAFE.
-contract VirtualSafeToken is BaseGuard, ERC20("Virtual Safe Token", "vSAFE", 18) {
+contract VirtualSafeToken is BaseGuard, ERC20("Virtual Safe Token", "vSAFE", 18), Owned(tx.origin) {
     /// @dev Canonical deployment of SAFE on Ethereum.
     address internal constant safeToken = 0x5aFE3855358E112B5647B952709E6165e1c1eEEe;
-
-    /// @dev Owner of the contract.
-    address public immutable OWNER;
 
     /// @dev Internal flag to ensure this guard is enabled.
     uint256 internal guardCheck = 1;
@@ -26,17 +24,15 @@ contract VirtualSafeToken is BaseGuard, ERC20("Virtual Safe Token", "vSAFE", 18)
     /// @dev Tracks active mint claims by Safes.
     mapping( /*safe*/ address => /*minted*/ bool) public active;
 
-    /// @dev Trusted safe proxies.
-    mapping(bytes32 => bool) public trustedProxies;
-
     /// @dev Trusted master copies.
     mapping(address => bool) public trustedMasterCopies;
 
+    /// @dev Trusted Safe proxies.
+    mapping(bytes32 => bool) public trustedProxies;
+
     /// @dev We can cut 10 opcodes in the creation-time
     /// EVM bytecode by declaring constructor payable.
-    constructor() payable {
-        OWNER = msg.sender;
-    }
+    constructor() payable {}
 
     /// @dev Fetches whether SAFE is paused.
     function paused() public view returns (bool) {
@@ -65,19 +61,19 @@ contract VirtualSafeToken is BaseGuard, ERC20("Virtual Safe Token", "vSAFE", 18)
         }
     }
 
-    /// @dev Burn an amount of vSAFE.
+    /// @dev Burns an amount of vSAFE.
     function burn(uint256 amount) external payable {
         _burn(msg.sender, amount);
     }
 
-    /// @dev Burn an amount of vSAFE to redeem SAFE.
+    /// @dev Burns an amount of vSAFE to redeem SAFE.
     function redeem(address from, uint256 amount) external payable {
         ERC20(safeToken).transferFrom(from, msg.sender, amount);
 
         _burn(msg.sender, amount);
     }
 
-    /// @dev Burn vSAFE to exit Safe guard conditions.
+    /// @dev Burns vSAFE to exit Safe guard conditions.
     /// Users renouncing should make sure they revoke
     /// SAFE allowance given at the time of minting. Otherwise,
     /// anyone can redeem against user's SAFE when they become
@@ -108,6 +104,7 @@ contract VirtualSafeToken is BaseGuard, ERC20("Virtual Safe Token", "vSAFE", 18)
         external
         override
     {
+        // Ensure no delegate call to run restricted code.
         require(op != Enum.Operation.DelegateCall, "RESTRICTED_CALL");
 
         // Ensure mint by guarded Safe.
@@ -118,7 +115,7 @@ contract VirtualSafeToken is BaseGuard, ERC20("Virtual Safe Token", "vSAFE", 18)
             guardCheck = 2;
         } else {
             if (active[msg.sender]) {
-                // Ensure guard cannot be removed while active
+                // Ensure guard cannot be removed while active.
                 if (to == msg.sender && data.length >= 4 && bytes4(data[:4]) == GuardManager.setGuard.selector) {
                     revert("RESTRICTED_FUNC");
                 }
@@ -129,29 +126,23 @@ contract VirtualSafeToken is BaseGuard, ERC20("Virtual Safe Token", "vSAFE", 18)
         }
     }
 
-    function setTrustedProxy(bytes32 _proxyHash, bool _trusted) external onlyOwner {
-        trustedProxies[_proxyHash] = _trusted;
-    }
+    /// @dev Internal Safe module fetch.
+    function _getNumberOfEnabledModules(address safe) internal view returns (uint256) {
+        (address[] memory modules,) = ModuleManager(safe).getModulesPaginated(address(0x1), 1);
 
-    function setTrustedMasterCopy(address _masterCopy, bool _trusted) external onlyOwner {
-        trustedMasterCopies[_masterCopy] = _trusted;
+        return modules.length;
     }
 
     /// @dev Placeholder for after-execution check in Safe guard.
     function checkAfterExecution(bytes32, bool) external view override {}
 
-    function _getNumberOfEnabledModules(
-        address _safe
-    ) internal view returns (uint) {
-        (address[] memory modules, ) = ModuleManager(_safe).getModulesPaginated(
-            address(0x1),
-            1
-        );
-        return modules.length;
+    /// @dev Operator sets trusted proxy hash for Safe guard check.
+    function setTrustedProxy(bytes32 proxyHash, bool trusted) external payable onlyOwner {
+        trustedProxies[proxyHash] = trusted;
     }
 
-    modifier onlyOwner {
-        require(msg.sender == OWNER, "UNAUTHORIZED");
-        _;
+    /// @dev Operator sets trusted master copy for Safe guard check.
+    function setTrustedMasterCopy(address masterCopy, bool trusted) external payable onlyOwner {
+        trustedMasterCopies[masterCopy] = trusted;
     }
 }
