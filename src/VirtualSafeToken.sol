@@ -7,6 +7,7 @@ import {ERC20} from "solmate/tokens/ERC20.sol";
 /// @title Virtual Safe Token.
 /// @author z0r0z.eth
 /// @custom:coauthor ellie.lens
+/// @custom:coauthor 0xdapper
 /// @notice Makes Safe Token (SAFE) opt-in transferable via tx guard.
 /// Users can mint vSAFE equal to their SAFE while it is paused.
 /// SAFE can be reclaimed from vSAFE pool by burning vSAFE.
@@ -30,7 +31,7 @@ contract VirtualSafeToken is BaseGuard, ERC20("Virtual Safe Token", "vSAFE", 18)
     }
 
     /// @dev Mints unclaimed vSAFE to SAFE holders.
-    function mint(address to) public payable {
+    function mint(address to) external payable {
         // Ensure this call is by guarded Safe.
         require(guardCheck == 2, "UNGUARDED");
 
@@ -40,7 +41,7 @@ contract VirtualSafeToken is BaseGuard, ERC20("Virtual Safe Token", "vSAFE", 18)
         // Ensure no mint during transferable period.
         require(paused(), "UNPAUSED");
 
-        // Ensure that SAFE custody is given to vSAFE to fund reclaiming.
+        // Ensure that SAFE custody is given to vSAFE to fund redemptions.
         require(ERC20(safeToken).allowance(msg.sender, address(this)) == type(uint256).max, "UNAPPROVED");
 
         // Ensure no double mint and mint vSAFE per SAFE balance.
@@ -52,12 +53,12 @@ contract VirtualSafeToken is BaseGuard, ERC20("Virtual Safe Token", "vSAFE", 18)
     }
 
     /// @dev Burn an amount of vSAFE.
-    function burn(uint256 amount) public payable {
+    function burn(uint256 amount) external payable {
         _burn(msg.sender, amount);
     }
 
     /// @dev Burn an amount of vSAFE to redeem SAFE.
-    function redeem(address from, uint256 amount) public payable {
+    function redeem(address from, uint256 amount) external payable {
         ERC20(safeToken).transferFrom(from, msg.sender, amount);
 
         _burn(msg.sender, amount);
@@ -68,7 +69,7 @@ contract VirtualSafeToken is BaseGuard, ERC20("Virtual Safe Token", "vSAFE", 18)
     /// SAFE allowance given at the time of minting. Otherwise,
     /// anyone can redeem against user's SAFE when they become
     /// transferable.
-    function renounce() public payable {
+    function renounce() external payable {
         delete active[msg.sender];
 
         _burn(msg.sender, ERC20(safeToken).balanceOf(msg.sender));
