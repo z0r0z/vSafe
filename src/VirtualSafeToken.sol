@@ -64,10 +64,10 @@ contract VirtualSafeToken is BaseGuard, ERC20("Virtual Safe Token", "vSAFE", 18)
     }
 
     /// @dev Burn vSAFE to exit Safe guard conditions.
-    ///      Users renouncing should make sure they revoke
-    ///      SAFE allowance given at the time of minting. Otherwise
-    ///      anyone can redeem against user's safe when they become
-    ///      transferable.
+    /// Users renouncing should make sure they revoke
+    /// SAFE allowance given at the time of minting. Otherwise,
+    /// anyone can redeem against user's SAFE when they become
+    /// transferable.
     function renounce() public payable {
         delete active[msg.sender];
 
@@ -75,13 +75,14 @@ contract VirtualSafeToken is BaseGuard, ERC20("Virtual Safe Token", "vSAFE", 18)
     }
 
     /// @dev Called by a Safe before a transaction is executed.
-    /// @param to   Destination address of the Safe transaction.
-    /// @param data Transaciton calldata of the Safe transaction.
+    /// @param to Destination address of the Safe transaction.
+    /// @param data Calldata of the Safe transaction.
+    /// @param op Operation in Safe transaction.
     function checkTransaction(
         address to,
         uint256,
         bytes calldata data,
-        Enum.Operation,
+        Enum.Operation op,
         uint256,
         uint256,
         uint256,
@@ -93,22 +94,20 @@ contract VirtualSafeToken is BaseGuard, ERC20("Virtual Safe Token", "vSAFE", 18)
         external
         override
     {
+        require(op != Enum.Operation.DelegateCall, "RESTRICTED_CALL");
+
         // Ensure mint by guarded Safe.
         if (to == address(this)) {
             guardCheck = 2;
         } else {
             if (active[msg.sender]) {
                 // Ensure guard cannot be removed while active
-                if (
-                    to == msg.sender &&
-                    data.length >= 4 &&
-                    bytes4(data[:4]) == GuardManager.setGuard.selector
-                ) {
-                    revert("RESTRICTED");
+                if (to == msg.sender && data.length >= 4 && bytes4(data[:4]) == GuardManager.setGuard.selector) {
+                    revert("RESTRICTED_FUNC");
                 }
 
-                // Ensure no calls to safe token
-                require(to != safeToken, "RESTRICTED");
+                // Ensure no calls to SAFE token.
+                require(to != safeToken, "RESTRICTED_DEST");
             }
         }
     }
