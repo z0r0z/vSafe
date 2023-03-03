@@ -64,6 +64,10 @@ contract VirtualSafeToken is BaseGuard, ERC20("Virtual Safe Token", "vSAFE", 18)
     }
 
     /// @dev Burn vSAFE to exit Safe guard conditions.
+    ///      Users renouncing should make sure they revoke
+    ///      SAFE allowance given at the time of minting. Otherwise
+    ///      anyone can redeem against user's safe when they become
+    ///      transferable.
     function renounce() public payable {
         delete active[msg.sender];
 
