@@ -2,6 +2,8 @@
 pragma solidity ^0.8.19;
 
 import {Enum, BaseGuard, GuardManager} from "lib/safe-contracts/contracts/base/GuardManager.sol";
+import {IProxy} from "lib/safe-contracts/contracts/proxies/SafeProxy.sol";
+import {ModuleManager} from "lib/safe-contracts/contracts/base/ModuleManager.sol";
 import {ERC20} from "solmate/tokens/ERC20.sol";
 
 /// @title Virtual Safe Token.
@@ -20,6 +22,12 @@ contract VirtualSafeToken is BaseGuard, ERC20("Virtual Safe Token", "vSAFE", 18)
 
     /// @dev Tracks active mint claims by Safes.
     mapping( /*safe*/ address => /*minted*/ bool) public active;
+
+    /// @dev Trusted safe proxies.
+    mapping(bytes32 => bool) public trustedProxies;
+
+    /// @dev Trusted master copies.
+    mapping(address => bool) public trustedMasterCopies;
 
     /// @dev We can cut 10 opcodes in the creation-time
     /// EVM bytecode by declaring constructor payable.
@@ -99,6 +107,9 @@ contract VirtualSafeToken is BaseGuard, ERC20("Virtual Safe Token", "vSAFE", 18)
 
         // Ensure mint by guarded Safe.
         if (to == address(this)) {
+            require(msg.sender.code.length > 0 && trustedProxies[msg.sender.codehash], "UNKNOWN_PROXY");
+            require(trustedMasterCopies[IProxy(msg.sender).masterCopy()], "UNKNOWN_MASTER_COPY");
+            require(_getNumberOfEnabledModules(msg.sender) == 0, "MODULES_ENABLED");
             guardCheck = 2;
         } else {
             if (active[msg.sender]) {
@@ -115,4 +126,14 @@ contract VirtualSafeToken is BaseGuard, ERC20("Virtual Safe Token", "vSAFE", 18)
 
     /// @dev Placeholder for after-execution check in Safe guard.
     function checkAfterExecution(bytes32, bool) external view override {}
+
+    function _getNumberOfEnabledModules(
+        address _safe
+    ) internal view returns (uint) {
+        (address[] memory modules, ) = ModuleManager(_safe).getModulesPaginated(
+            address(0x1),
+            1
+        );
+        return modules.length;
+    }
 }
