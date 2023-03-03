@@ -16,7 +16,7 @@ Transferability still seems like a useful direction to explore, if only to provi
 
 This initial phase of transferability is supported by the technical implementation of vSAFE by using a secondary ERC20 token that can be minted by current SAFE holders that add vSAFE as a transaction guard.
 
-The transaction guard prevents moving SAFE tokens without redeeming vSAFE tokens, therefore establishing their 1:1 representation and backing as a virtual unit of account.
+The transaction guard prevents moving SAFE tokens without redeeming vSAFE tokens, therefore establishing their 1:1 representation and backing as a virtual unit of account. In this sense, each vSAFE user contributes to a shared pool of claimable SAFE when it unlocks, but at all times, can burn their vSAFE to get their SAFE back or turn off the transaction guard.
 
 ## User Story
 
