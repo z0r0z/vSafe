@@ -28,7 +28,7 @@ Later when (or if?) SAFE unlocks, Charlie can convert vSAFE to SAFE. Nice.
 
 ## Deployment
 
-[`0xa30010603857e547CF1AA74c7847B357B5fBF0d2`](https://etherscan.io/address/0xa30010603857e547cf1aa74c7847b357b5fbf0d2)
+[`0x000075a79a928B8071f41D14bD5da462a9B68985`](https://etherscan.io/address/0x000075a79a928B8071f41D14bD5da462a9B68985)
 
 ### Disclaimer
 
