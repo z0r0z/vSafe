@@ -15,11 +15,11 @@ import {Owned} from "solmate/auth/Owned.sol";
 /// Users can mint vSAFE equal to their SAFE while it is paused.
 /// SAFE can be reclaimed from vSAFE pool by burning vSAFE.
 contract VirtualSafeToken is BaseGuard, ERC20("Virtual Safe Token", "vSAFE", 18), Owned(tx.origin) {
-    /// @dev Fired off when trusted proxy hash set for Safe guard check.
-    event TrustedProxySet(bytes32 proxyHash, bool trusted);
-
     /// @dev Fired off when trusted master copy set for Safe guard check.
     event TrustedMasterCopySet(address masterCopy, bool trusted);
+
+    /// @dev Fired off when trusted proxy hash set for Safe guard check.
+    event TrustedProxySet(bytes32 proxyHash, bool trusted);
 
     /// @dev Canonical deployment of SAFE on Ethereum.
     address internal constant safeToken = 0x5aFE3855358E112B5647B952709E6165e1c1eEEe;
@@ -28,7 +28,7 @@ contract VirtualSafeToken is BaseGuard, ERC20("Virtual Safe Token", "vSAFE", 18)
     uint256 internal guardCheck = 1;
 
     /// @dev Tracks active mint claims by Safes.
-    mapping( /*safe*/ address => /*minted*/ bool) public active;
+    mapping(address safe => bool minted) public active;
 
     /// @dev Trusted master copies.
     mapping(address => bool) public trustedMasterCopies;
@@ -142,17 +142,17 @@ contract VirtualSafeToken is BaseGuard, ERC20("Virtual Safe Token", "vSAFE", 18)
     /// @dev Placeholder for after-execution check in Safe guard.
     function checkAfterExecution(bytes32, bool) external view override {}
 
-    /// @dev Operator sets trusted proxy hash for Safe guard check.
-    function setTrustedProxy(bytes32 proxyHash, bool trusted) external payable onlyOwner {
-        trustedProxies[proxyHash] = trusted;
-
-        emit TrustedProxySet(proxyHash, trusted);
-    }
-
     /// @dev Operator sets trusted master copy for Safe guard check.
     function setTrustedMasterCopy(address masterCopy, bool trusted) external payable onlyOwner {
         trustedMasterCopies[masterCopy] = trusted;
 
         emit TrustedMasterCopySet(masterCopy, trusted);
+    }
+
+    /// @dev Operator sets trusted proxy hash for Safe guard check.
+    function setTrustedProxy(bytes32 proxyHash, bool trusted) external payable onlyOwner {
+        trustedProxies[proxyHash] = trusted;
+
+        emit TrustedProxySet(proxyHash, trusted);
     }
 }

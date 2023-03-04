@@ -10,7 +10,7 @@ import {SafeToken} from "lib/safe-token/contracts/SafeToken.sol";
 contract VirtualSafeTokenTest is Test {
     using stdStorage for StdStorage;
 
-    VirtualSafeToken internal token;
+    VirtualSafeToken internal constant token = VirtualSafeToken(0xa30010603857e547CF1AA74c7847B357B5fBF0d2);
 
     Safe internal constant safeTreasury = Safe(payable(0x8CF60B289f8d31F737049B590b5E4285Ff0Bd1D1));
     SafeToken internal constant safeToken = SafeToken(0x5aFE3855358E112B5647B952709E6165e1c1eEEe);
@@ -19,9 +19,6 @@ contract VirtualSafeTokenTest is Test {
     function setUp() public payable {
         // Create Ethereum fork.
         vm.createSelectFork(vm.rpcUrl("mainnet"));
-
-        // Create test vSAFE token.
-        token = new VirtualSafeToken();
 
         // Simulate setting guard to vSAFE.
         vm.prank(address(safeTreasury));
