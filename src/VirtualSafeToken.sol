@@ -104,7 +104,7 @@ contract VirtualSafeToken is BaseGuard, ERC20("Virtual Safe Token", "vSAFE", 18)
         uint256,
         address,
         address payable,
-        bytes calldata,
+        bytes memory,
         address
     )
         external
@@ -118,6 +118,7 @@ contract VirtualSafeToken is BaseGuard, ERC20("Virtual Safe Token", "vSAFE", 18)
             require(msg.sender.code.length > 0 && trustedProxies[msg.sender.codehash], "UNKNOWN_PROXY");
             require(trustedMasterCopies[IProxy(msg.sender).masterCopy()], "UNKNOWN_MASTER_COPY");
             require(_getNumberOfEnabledModules(msg.sender) == 0, "MODULES_ENABLED");
+
             guardCheck = 2;
         } else {
             if (active[msg.sender]) {

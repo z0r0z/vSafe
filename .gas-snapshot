@@ -1,3 +1,3 @@
-VirtualSafeTokenTest:testSafeTokenBalance() (gas: 5950)
-VirtualSafeTokenTest:testSafeTokenOwner() (gas: 5855)
-VirtualSafeTokenTest:testSafeTokenPaused() (gas: 5635)
+VirtualSafeTokenTest:testSafeTokenBalance() (gas: 5953)
+VirtualSafeTokenTest:testSafeTokenOwner() (gas: 5808)
+VirtualSafeTokenTest:testSafeTokenPaused() (gas: 5560)

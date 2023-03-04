@@ -1,7 +1,6 @@
 [profile.default]
 solc_version = "0.8.19"
 optimizer_runs = 9_999_999
-via_ir = true
 
 [rpc_endpoints]
 mainnet = "https://rpc.ankr.com/eth"
