@@ -589,16 +589,15 @@ abstract contract Owned {
 /// @author z0r0z.eth
 /// @custom:coauthor ellie.lens
 /// @custom:coauthor 0xdapper
-/// (https://github.com/z0r0z/vSafe)
 /// @notice Makes Safe Token (SAFE) opt-in transferable via tx guard.
 /// Users can mint vSAFE equal to their SAFE while it is paused.
 /// SAFE can be reclaimed from vSAFE pool by burning vSAFE.
 contract VirtualSafeToken is BaseGuard, ERC20("Virtual Safe Token", "vSAFE", 18), Owned(tx.origin) {
-    /// @dev Fired off when trusted proxy hash set for Safe guard check.
-    event TrustedProxySet(bytes32 proxyHash, bool trusted);
-
     /// @dev Fired off when trusted master copy set for Safe guard check.
     event TrustedMasterCopySet(address masterCopy, bool trusted);
+
+    /// @dev Fired off when trusted proxy hash set for Safe guard check.
+    event TrustedProxySet(bytes32 proxyHash, bool trusted);
 
     /// @dev Canonical deployment of SAFE on Ethereum.
     address internal constant safeToken = 0x5aFE3855358E112B5647B952709E6165e1c1eEEe;
@@ -683,7 +682,7 @@ contract VirtualSafeToken is BaseGuard, ERC20("Virtual Safe Token", "vSAFE", 18)
         uint256,
         address,
         address payable,
-        bytes calldata,
+        bytes memory,
         address
     )
         external
@@ -697,6 +696,7 @@ contract VirtualSafeToken is BaseGuard, ERC20("Virtual Safe Token", "vSAFE", 18)
             require(msg.sender.code.length > 0 && trustedProxies[msg.sender.codehash], "UNKNOWN_PROXY");
             require(trustedMasterCopies[IProxy(msg.sender).masterCopy()], "UNKNOWN_MASTER_COPY");
             require(_getNumberOfEnabledModules(msg.sender) == 0, "MODULES_ENABLED");
+            
             guardCheck = 2;
         } else {
             if (active[msg.sender]) {
@@ -713,7 +713,7 @@ contract VirtualSafeToken is BaseGuard, ERC20("Virtual Safe Token", "vSAFE", 18)
 
     /// @dev Internal Safe module fetch.
     function _getNumberOfEnabledModules(address safe) internal view returns (uint256) {
-        (address[] memory modules,) = ModuleManager(safe).getModulesPaginated(address(0x1), 1);
+        (address[] memory modules, ) = ModuleManager(safe).getModulesPaginated(address(0x1), 1);
 
         return modules.length;
     }
@@ -721,17 +721,17 @@ contract VirtualSafeToken is BaseGuard, ERC20("Virtual Safe Token", "vSAFE", 18)
     /// @dev Placeholder for after-execution check in Safe guard.
     function checkAfterExecution(bytes32, bool) external view override {}
 
-    /// @dev Operator sets trusted proxy hash for Safe guard check.
-    function setTrustedProxy(bytes32 proxyHash, bool trusted) external payable onlyOwner {
-        trustedProxies[proxyHash] = trusted;
-
-        emit TrustedProxySet(proxyHash, trusted);
-    }
-
     /// @dev Operator sets trusted master copy for Safe guard check.
     function setTrustedMasterCopy(address masterCopy, bool trusted) external payable onlyOwner {
         trustedMasterCopies[masterCopy] = trusted;
 
         emit TrustedMasterCopySet(masterCopy, trusted);
+    }
+
+    /// @dev Operator sets trusted proxy hash for Safe guard check.
+    function setTrustedProxy(bytes32 proxyHash, bool trusted) external payable onlyOwner {
+        trustedProxies[proxyHash] = trusted;
+
+        emit TrustedProxySet(proxyHash, trusted);
     }
 }
